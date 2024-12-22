@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.example.ar_firstapp.ui.theme.AR_FirstAppTheme
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
+import com.google.ar.core.CameraConfig
+import com.google.ar.core.CameraConfigFilter
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
@@ -70,6 +72,7 @@ import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberRenderer
 import io.github.sceneview.rememberScene
 import io.github.sceneview.rememberView
+import java.util.EnumSet
 
 private const val kModelFile = "models/burger.glb"
 private const val kMaxModelInstances = 10
@@ -338,6 +341,18 @@ fun ARScreen(modelState: State<String>) {
             // The config must be one returned by [Session.getSupportedCameraConfigs].
             // Provides details of a camera configuration such as size of the CPU image and GPU texture.
             /*sessionCameraConfig = null,*/
+            /*sessionCameraConfig = { session ->
+                //set front camera
+                val filter = CameraConfigFilter(session)
+                filter.setFacingDirection(CameraConfig.FacingDirection.FRONT)
+                val cameraConfigList = session.getSupportedCameraConfigs(filter)
+                cameraConfigList[0]
+
+                // session.getSupportedCameraConfigs(
+                //     CameraConfigFilter(session)
+                //         .setFacingDirection(CameraConfig.FacingDirection.FRONT)
+                // ).first()
+            },*/
             // Configures the session and verifies that the enabled features in the specified session config
             // are supported with the currently set camera config.
             sessionConfiguration = { session, config ->
@@ -347,8 +362,8 @@ fun ARScreen(modelState: State<String>) {
                         else -> Config.DepthMode.DISABLED
                     }
                 config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
-                config.lightEstimationMode =
-                    Config.LightEstimationMode.ENVIRONMENTAL_HDR
+                config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+                config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
             },
             planeRenderer = planeRenderer,
             // The [ARCameraStream] to render the camera texture.
