@@ -44,6 +44,7 @@ import com.google.ar.core.CameraConfigFilter
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
+import com.google.ar.core.TrackingFailureReason
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
@@ -173,14 +174,14 @@ fun ARScreen(modelState: State<String>) {
     // An Engine instance main function is to keep track of all resources created by the user and manage
     // the rendering thread as well as the hardware renderer.
     // To use filament, an Engine instance must be created first.
-        val engine = rememberEngine()
+    val engine = rememberEngine()
     // Encompasses all the state needed for rendering a [Scene].
     // [View] instances are heavy objects that internally cache a lot of data needed for
     // rendering. It is not advised for an application to use many View objects.
     // For example, in a game, a [View] could be used for the main scene and another one for the
     // game's user interface. More [View] instances could be used for creating special
     // effects (e.g. a [View] is akin to a rendering pass).
-        val view = rememberView(engine)
+    val view = rememberView(engine)
     // A [Renderer] instance represents an operating system's window.
     // Typically, applications create a [Renderer] per window. The [Renderer] generates drawing
     // commands for the render thread and manages frame latency.
@@ -190,14 +191,14 @@ fun ARScreen(modelState: State<String>) {
     // Consumes a blob of glTF 2.0 content (either JSON or GLB) and produces a [Model] object, which is
     // a bundle of Filament textures, vertex buffers, index buffers, etc.
     // A [Model] is composed of 1 or more [ModelInstance] objects which contain entities and components.
-        val modelLoader = rememberModelLoader(engine)
+    val modelLoader = rememberModelLoader(engine)
     // A Filament Material defines the visual appearance of an object.
     // Materials function as a templates from which [MaterialInstance]s can be spawned.
-        val materialLoader = rememberMaterialLoader(engine)
+    val materialLoader = rememberMaterialLoader(engine)
 
-        val cameraNode = rememberARCameraNode(engine)
-        var planeRenderer by remember { mutableStateOf(true) }
-        val childNodes = rememberNodes()
+    val cameraNode = rememberARCameraNode(engine)
+    var planeRenderer by remember { mutableStateOf(true) }
+    val childNodes = rememberNodes()
 
     // Utility for decoding an HDR file or consuming KTX1 files and producing Filament textures,
     // IBLs, and sky boxes.
@@ -205,10 +206,15 @@ fun ARScreen(modelState: State<String>) {
     // into a single file.
         /*val environmentLoader = rememberEnvironmentLoader(engine)*/
     // Physics system to handle collision between nodes, hit testing on a nodes,...
-        val collisionSystem = rememberCollisionSystem(view)
+    val collisionSystem = rememberCollisionSystem(view)
 
     val modelInstances = remember { mutableListOf<ModelInstance>() }
     var frame by remember { mutableStateOf<Frame?>(null) }
+
+    var trackingFailureReason by remember {
+        mutableStateOf<TrackingFailureReason?>(null)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         ARScene(
             // The modifier to be applied to the layout.
@@ -301,22 +307,23 @@ fun ARScreen(modelState: State<String>) {
                     tapedNode?.let { it.scale *= 2.0f }
                 }*/
                 onSingleTapConfirmed = { motionEvent, node ->
-                    if (node == null) {
+                    if (node == null) { // check that the tap was not on an existent node
                         val hitResults = frame?.hitTest(motionEvent.x, motionEvent.y)
                         hitResults?.firstOrNull {
                             it.isValid(
+                                //exclude depth point and points (prefer planes)
                                 depthPoint = false,
                                 point = false
                             )
-                        }?.createAnchorOrNull()
+                        }?.createAnchorOrNull() // create anchor
                             ?.let { anchor ->
                                 // planeRenderer = false
-                                childNodes += createAnchorNode(
+                                childNodes += createAnchorNode( // create node on anchor, add it to childNodes
                                     engine = engine,
                                     modelLoader = modelLoader,
                                     materialLoader = materialLoader,
                                     modelInstances = modelInstances,
-                                    model = modelState.value,//model.value,
+                                    model = modelState.value,
                                     anchor = anchor
                                 )
                             }
@@ -363,7 +370,8 @@ fun ARScreen(modelState: State<String>) {
                     }
                 config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                 config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-                config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
+                config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL
+
             },
             planeRenderer = planeRenderer,
             // The [ARCameraStream] to render the camera texture.
@@ -388,6 +396,7 @@ fun ARScreen(modelState: State<String>) {
             onSessionUpdated = { session, updatedFrame ->
                 frame = updatedFrame
 
+                // To spawn model on startup
                 /*if (childNodes.isEmpty()) {
                     updatedFrame.getUpdatedPlanes()
                         .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
@@ -397,7 +406,7 @@ fun ARScreen(modelState: State<String>) {
                                 modelLoader = modelLoader,
                                 materialLoader = materialLoader,
                                 modelInstances = modelInstances,
-                                model = model,
+                                model = modelState.value,
                                 anchor = anchor
                             )
                         }
@@ -411,7 +420,8 @@ fun ARScreen(modelState: State<String>) {
             // Listen for camera tracking failure.
             // The reason that [Camera.getTrackingState] is [TrackingState.PAUSED] or `null` if it is
             // [TrackingState.TRACKING]
-            onTrackingFailureChanged = { trackingFailureReason ->
+            onTrackingFailureChanged = {
+                trackingFailureReason = it
             }
         )
         /*if(placeModelButton.value){
@@ -445,21 +455,28 @@ fun createAnchorNode(
     model: String,
     anchor: Anchor
 ): AnchorNode {
-    Log.d("ModelString", model)
-    val anchorNode = AnchorNode(engine = engine, anchor = anchor)
-    Log.d("MyModel", model)
+    val anchorNode = AnchorNode(engine = engine, anchor = anchor).apply {
+        isPositionEditable = true // true by default
+        isRotationEditable = true
+        // isScaleEditable = true
+        // isSmoothTransformEnabled = true
+        // isEditable = true
 
-    val model1 = modelLoader.createModel(
-        assetFileLocation = "models/${model}.glb"
-    )
-    val modelNode = modelLoader.createInstance(model1)?.let {
-        ModelNode(modelInstance = it, scaleToUnits = 0.25f)
-            .apply {
-                isEditable = true
-                isScaleEditable = true
-            }
-    }!!
-
+    }
+    val modelNode = ModelNode(
+        modelLoader.createInstance(
+            modelLoader.createModel(
+                assetFileLocation = "models/${model}.glb"
+            )
+        )!!, // !! asserts that value is not null (even if it is a nullable type)
+        scaleToUnits = 0.25f
+    ).apply {
+        // isEditable = true
+        // isScaleEditable = true
+        // isPositionEditable = true
+        // isRotationEditable = true
+        // isSmoothTransformEnabled = true
+    }
 
     /*val modelNode = ModelNode(
         modelInstance = modelInstances.apply {
@@ -479,7 +496,6 @@ fun createAnchorNode(
         isEditable = true
     }*/
 
-
     val boundingBoxNode = CubeNode(
         engine,
         size = modelNode.extents,
@@ -491,12 +507,11 @@ fun createAnchorNode(
     modelNode.addChildNode(boundingBoxNode)
     anchorNode.addChildNode(modelNode)
 
-    listOf(modelNode, anchorNode).forEach {
+    listOf(modelNode, anchorNode).forEach { // list just to not repeat the same code
         it.onEditingChanged = { editingTransforms ->
-            boundingBoxNode.isVisible = editingTransforms.isNotEmpty()
+            boundingBoxNode.isVisible = editingTransforms.isNotEmpty() //check if the model is being edited
         }
-        /*it.onScale = { detector, e, scaleFactor ->
-        }*/
+        // it.onScale = { detector, e, scaleFactor -> /* */ }
     }
     return anchorNode
 }
