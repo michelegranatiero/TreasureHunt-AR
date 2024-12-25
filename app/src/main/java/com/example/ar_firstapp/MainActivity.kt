@@ -39,11 +39,14 @@ import androidx.compose.ui.unit.dp
 import com.example.ar_firstapp.ui.theme.AR_FirstAppTheme
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
+import com.google.ar.core.Anchor.CloudAnchorState
 import com.google.ar.core.CameraConfig
 import com.google.ar.core.CameraConfigFilter
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
+import com.google.ar.core.Future
 import com.google.ar.core.Plane
+import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
@@ -78,6 +81,17 @@ import java.util.EnumSet
 private const val kModelFile = "models/burger.glb"
 private const val kMaxModelInstances = 10
 
+private enum class AppAnchorState {
+    NONE,
+    HOSTING,
+    HOSTED,
+    RESOLVING,
+    RESOLVED
+}
+
+private lateinit var _session: Session
+private lateinit var future: Future
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,6 +116,13 @@ class MainActivity : ComponentActivity() {
                                 currentModel.value = modelName
                             }
                         )*/
+                        /*Button(
+                            onClick = {
+
+                            }
+                        ) {
+                            Text("Host Cloud Anchor")
+                        }*/
 
                     }
                 }
@@ -109,8 +130,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-
 
 @Composable
 fun Menu(modifier: Modifier,onClick:(String)->Unit) {
@@ -317,15 +336,19 @@ fun ARScreen(modelState: State<String>) {
                             )
                         }?.createAnchorOrNull() // create anchor
                             ?.let { anchor ->
+
+                                future = _session.hostCloudAnchorAsync(anchor, 1, ::onHostComplete)
+
+
                                 // planeRenderer = false
-                                childNodes += createAnchorNode( // create node on anchor, add it to childNodes
+                                /*childNodes += createAnchorNode( // create node on anchor, add it to childNodes
                                     engine = engine,
                                     modelLoader = modelLoader,
                                     materialLoader = materialLoader,
                                     modelInstances = modelInstances,
                                     model = modelState.value,
                                     anchor = anchor
-                                )
+                                )*/
                             }
                     }
                 }
@@ -371,6 +394,11 @@ fun ARScreen(modelState: State<String>) {
                 config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                 config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL
+
+                config.setCloudAnchorMode(Config.CloudAnchorMode.ENABLED)
+                // config.cloudAnchorMode = Config.CloudAnchorMode.ENABLED
+                Log.d("CloudAnchorMode", config.cloudAnchorMode.toString())
+                _session = session
 
             },
             planeRenderer = planeRenderer,
@@ -514,4 +542,13 @@ fun createAnchorNode(
         // it.onScale = { detector, e, scaleFactor -> /* */ }
     }
     return anchorNode
+}
+
+
+fun onHostComplete(cloudAnchorId: String, cloudState: CloudAnchorState){
+    if (cloudState == CloudAnchorState.SUCCESS) {
+        Log.d("Cloud1", cloudAnchorId)
+    } else {
+        Log.d("Cloud2", cloudState.toString());
+    }
 }

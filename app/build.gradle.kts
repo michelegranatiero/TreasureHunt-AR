@@ -68,4 +68,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.arsceneview)
+
+    implementation(libs.play.services.auth) //for cloud anchors
 }
