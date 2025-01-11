@@ -10,6 +10,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.example.ar_firstapp.navigation.Route
+import com.example.ar_firstapp.ui.game.HomeScreen
+import com.example.ar_firstapp.ui.authentication.LoginScreen
+import com.example.ar_firstapp.ui.authentication.RegistrationScreen
 import com.example.ar_firstapp.ui.theme.AR_FirstAppTheme
 
 
@@ -22,9 +25,9 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
-                    startDestination = Route.LoginGraph
+                    startDestination = Route.AuthenticationGraph
                 ) {
-                    loginGraph()
+                    authenticationGraph()
                     gameGraph()
                 }
 
@@ -36,14 +39,14 @@ class MainActivity : ComponentActivity() {
 
 
 
-fun NavGraphBuilder.loginGraph() {
-    navigation<Route.LoginGraph>(
-        startDestination = Route.LoginGraph.Login
+fun NavGraphBuilder.authenticationGraph() {
+    navigation<Route.AuthenticationGraph>(
+        startDestination = Route.AuthenticationGraph.Login
     ){
-        composable<Route.LoginGraph.Login> {
+        composable<Route.AuthenticationGraph.Login> {
             LoginScreen()
         }
-        composable<Route.LoginGraph.Registration> {
+        composable<Route.AuthenticationGraph.Registration> {
             RegistrationScreen()
         }
     }

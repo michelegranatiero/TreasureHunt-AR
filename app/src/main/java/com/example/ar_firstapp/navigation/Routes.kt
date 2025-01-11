@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 sealed interface Route {
     //Login Graph
     @Serializable
-    data object LoginGraph: Route
+    data object AuthenticationGraph: Route
 
     @Serializable
     data object Login: Route
@@ -27,7 +27,7 @@ sealed interface Route {
 
     // Login Graph
     @Serializable
-    data object LoginGraph : Route {
+    data object AuthenticationGraph : Route {
         @Serializable
         data object Login : Route
         @Serializable
