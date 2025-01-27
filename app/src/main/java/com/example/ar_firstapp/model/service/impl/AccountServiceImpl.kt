@@ -1,5 +1,6 @@
 package com.example.ar_firstapp.model.service.impl
 
+import android.util.Log
 import com.example.ar_firstapp.model.User
 import com.example.ar_firstapp.model.service.AccountService
 import com.google.firebase.Firebase
