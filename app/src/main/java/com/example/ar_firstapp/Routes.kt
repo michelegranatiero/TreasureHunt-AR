@@ -1,4 +1,4 @@
-package com.example.ar_firstapp.navigation
+package com.example.ar_firstapp
 
 import kotlinx.serialization.Serializable
 

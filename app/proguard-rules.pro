@@ -24,3 +24,9 @@
 -keep class com.google.android.gms.location.** { *; }
 -keep class com.google.android.gms.auth.** { *; }
 -keep class com.google.android.gms.tasks.** { *; }
+
+# Preserve classes that are used by the CredentialManager
+-if class androidx.credentials.CredentialManager
+-keep class androidx.credentials.playservices.** {
+  *;
+}

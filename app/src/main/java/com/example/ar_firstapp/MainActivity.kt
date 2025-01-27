@@ -9,7 +9,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import com.example.ar_firstapp.navigation.Route
 import com.example.ar_firstapp.ui.game.HomeScreen
 import com.example.ar_firstapp.ui.authentication.LoginScreen
 import com.example.ar_firstapp.ui.authentication.RegistrationScreen

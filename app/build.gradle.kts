@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.serialization) // for @Serializable (navigation)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.gms.google.services) // for @Serializable (navigation)
 }
 
 android {
@@ -72,8 +73,16 @@ dependencies {
     // implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.serialization.core)
 
-
     implementation(libs.arsceneview)
 
-    implementation(libs.play.services.auth) //for cloud anchors
+    implementation(libs.play.services.auth) //for cloud anchors ...and authentication
+
+    // Firebase Authentication
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+
+    //Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 }
