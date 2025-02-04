@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.AR_FirstApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.TreasureHunt_AR" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

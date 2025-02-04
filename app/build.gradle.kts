@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.ar_firstapp"
-    compileSdk = 34
+    namespace = "com.example.treasurehunt_ar"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.ar_firstapp"
+        applicationId = "com.example.treasurehunt_ar"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -69,19 +69,20 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Navigation
     implementation(libs.androidx.navigation.compose)
     // implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.core) //for @Serializable in navigation
 
-    implementation(libs.arsceneview)
+    implementation(libs.arsceneview)    //for ARCore and Sceneview
 
-    implementation(libs.play.services.auth) //for cloud anchors ...and authentication
+    implementation(libs.play.services.auth) //for cloud anchors ...and authentication (Credential Manager)
 
     // Firebase Authentication
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
 
-    //Credential Manager
+    //Credential Manager (Authentication)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)

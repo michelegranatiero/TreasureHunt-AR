@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AR_FirstApp"
+rootProject.name = "TreasureHunt_AR"
 include(":app")
  
