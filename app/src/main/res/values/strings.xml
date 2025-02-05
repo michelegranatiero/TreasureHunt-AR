@@ -13,7 +13,7 @@
     <string name="sign_up">Create account</string>
     <string name="sign_up_with_google">Sign up with Google</string>
     <string name="sign_up_description">Don\'t have an account? Click here to Sign Up!</string>
-    <string name="sign_in_description">Already have an account? Click here to Sign In!</string>
+    <string name="sign_in_description">Already have an account? Sign In here!</string>
     <string name="sign_out">Sign out</string>
     <string name="sign_out_title">Sign out?</string>
     <string name="sign_out_description">You will have to sign in again to see your progress.</string>

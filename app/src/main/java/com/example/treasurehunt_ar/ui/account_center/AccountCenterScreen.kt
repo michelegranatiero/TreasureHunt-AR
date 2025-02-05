@@ -2,13 +2,31 @@ package com.example.treasurehunt_ar.ui.account_center
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,14 +61,15 @@ fun AccountCenterScreen(
     val provider = user.provider.replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
     Scaffold (
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.account_center)) })
-        }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.account_center)) })},
+        contentWindowInsets = WindowInsets.safeContent,
     ){ innerPadding ->
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
             ,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

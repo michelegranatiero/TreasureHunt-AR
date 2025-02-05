@@ -17,6 +17,7 @@
 
         android:name = ".TreasureHuntApplication"
         android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="true"
 
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -26,7 +27,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TreasureHunt_AR"
-        tools:targetApi="31">
+        tools:targetApi="33">
         <activity
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustResize"

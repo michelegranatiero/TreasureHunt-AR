@@ -69,8 +69,8 @@ fun SnackbarFlowHelper(
             val result = snackbarHostState.showSnackbar(
                 message = event.message.asString(context),
                 actionLabel = event.action?.name,
-                // withDismissAction = true,
-                duration = SnackbarDuration.Long
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
             )
 
             when (result) {

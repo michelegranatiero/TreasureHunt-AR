@@ -1,10 +1,27 @@
 package com.example.treasurehunt_ar
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -13,6 +30,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -35,23 +53,29 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // To use this use usesCleartextTraffic in Manifest
         configureFirebaseServices() //Only for debugging
 
         setContent {
+            //for navigation bottom bar (if needed)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.isNavigationBarContrastEnforced = false
+            }
             TreasureHunt_ARTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val snackbarHostState = remember { SnackbarHostState() }
                     val appState = rememberAppState(/* snackbarHostState */)
                     SnackbarFlowHelper(snackbarHostState)
                     Scaffold (
-                        // contentWindowInsets = WindowInsets(0.dp),
                         snackbarHost = { SnackbarHost(
                             hostState = snackbarHostState,
                             snackbar = { data -> Snackbar(
                                 snackbarData = data,
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                // containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                // contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ) }
-                        ) }
+                        ) },
+
                     ){ /* innerPaddingModifier -> */
                         NavHost(
                             navController = appState.navController,
