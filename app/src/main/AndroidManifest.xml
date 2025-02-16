@@ -13,10 +13,11 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+
+    <!--android:usesCleartextTraffic="true"--><!--da mettere dentro application per debug firebase-->
     <application
 
         android:name = ".TreasureHuntApplication"
-        android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true"
 
         android:allowBackup="true"
@@ -38,6 +39,21 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:ignore="DiscouragedApi, LockedOrientationActivity"
+            android:stateNotNeeded="true"
+            tools:replace="android:screenOrientation"
+            android:configChanges="orientation|screenSize">
+        </activity>
+
+        <activity
+            android:name="com.example.treasurehunt_ar.mytemplate.OldTemplate"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.TreasureHunt_AR">
         </activity>
 
 <!--        <meta-data android:name="com.google.ar.core" android:value="required" />-->

@@ -30,6 +30,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -94,7 +95,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .padding(16.dp, 4.dp)
                 .border(
-                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primaryContainer),
+                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(50)
                 ),
             colors = TextFieldDefaults.colors(
@@ -115,7 +116,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .padding(16.dp, 4.dp)
                 .border(
-                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primaryContainer),
+                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(50)
                 ),
             colors = TextFieldDefaults.colors(
@@ -152,7 +153,7 @@ fun LoginScreen(
             .fillMaxWidth()
             .padding(8.dp))
 
-        Text(text = stringResource(R.string.or), fontSize = 16.sp, color = MaterialTheme.colorScheme.primaryContainer)
+        Text(text = stringResource(R.string.or), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
 
         Spacer(modifier = Modifier
             .fillMaxWidth()
@@ -170,7 +171,7 @@ fun LoginScreen(
             .padding(8.dp))
 
         TextButton(onClick = { viewModel.onSignUpClick(openAndPopUp) }) {
-            Text(text = stringResource(R.string.sign_up_description), fontSize = 16.sp, color = MaterialTheme.colorScheme.primaryContainer)
+            Text(text = stringResource(R.string.sign_up_description), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
         }
 
         /* Spacer(modifier = Modifier

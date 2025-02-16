@@ -92,7 +92,7 @@ fun RegistrationScreen(
                 .fillMaxWidth()
                 .padding(16.dp, 4.dp)
                 .border(
-                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primaryContainer),
+                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(50)
                 ),
             colors = TextFieldDefaults.colors(
@@ -113,7 +113,7 @@ fun RegistrationScreen(
                 .fillMaxWidth()
                 .padding(16.dp, 4.dp)
                 .border(
-                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primaryContainer),
+                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(50)
                 ),
             colors = TextFieldDefaults.colors(
@@ -135,7 +135,7 @@ fun RegistrationScreen(
                 .fillMaxWidth()
                 .padding(16.dp, 4.dp)
                 .border(
-                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primaryContainer),
+                    BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(50)
                 ),
             colors = TextFieldDefaults.colors(
@@ -172,7 +172,7 @@ fun RegistrationScreen(
             .fillMaxWidth()
             .padding(8.dp))
 
-        Text(text = stringResource(R.string.or), fontSize = 16.sp, color = MaterialTheme.colorScheme.primaryContainer)
+        Text(text = stringResource(R.string.or), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
 
         Spacer(modifier = Modifier
             .fillMaxWidth()
@@ -187,7 +187,7 @@ fun RegistrationScreen(
             .padding(8.dp)) */
 
         TextButton(onClick = { viewModel.onSignInClick(openAndPopUp) }) {
-            Text(text = stringResource(R.string.sign_in_description), fontSize = 16.sp, color = MaterialTheme.colorScheme.primaryContainer)
+            Text(text = stringResource(R.string.sign_in_description), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

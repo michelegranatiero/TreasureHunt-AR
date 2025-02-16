@@ -6,22 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.safeContent
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.BottomAppBarDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -30,7 +14,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -40,12 +23,15 @@ import androidx.navigation.compose.rememberNavController
 import com.example.treasurehunt_ar.ui.account_center.AccountCenterScreen
 import com.example.treasurehunt_ar.ui.authentication.LoginScreen
 import com.example.treasurehunt_ar.ui.authentication.RegistrationScreen
+import com.example.treasurehunt_ar.ui.game.GameScreen
 import com.example.treasurehunt_ar.ui.game.HomeScreen
+import com.example.treasurehunt_ar.ui.game.MatchmakingScreen
 import com.example.treasurehunt_ar.ui.splash.SplashScreen
 import com.example.treasurehunt_ar.ui.theme.TreasureHunt_ARTheme
 import com.example.treasurehunt_ar.ui.utils.SnackbarFlowHelper
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.database.database
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
@@ -54,7 +40,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // To use this use usesCleartextTraffic in Manifest
-        configureFirebaseServices() //Only for debugging
+        // configureFirebaseServices() //Only for debugging
 
         setContent {
             //for navigation bottom bar (if needed)
@@ -64,7 +50,7 @@ class MainActivity : ComponentActivity() {
             TreasureHunt_ARTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val snackbarHostState = remember { SnackbarHostState() }
-                    val appState = rememberAppState(/* snackbarHostState */)
+                    val appNavState = rememberAppState(/* snackbarHostState */)
                     SnackbarFlowHelper(snackbarHostState)
                     Scaffold (
                         snackbarHost = { SnackbarHost(
@@ -78,23 +64,23 @@ class MainActivity : ComponentActivity() {
 
                     ){ /* innerPaddingModifier -> */
                         NavHost(
-                            navController = appState.navController,
+                            navController = appNavState.navController,
                             startDestination = Route.Splash,
                             // modifier = Modifier.padding(innerPaddingModifier)
                         ) {
                             composable<Route.Splash> {
                                 SplashScreen(
-                                    openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) }
+                                    openAndPopUp = { route, popUp -> appNavState.navigateAndPopUp(route, popUp) }
                                 )
                             }
                             composable<Route.AccountCenter> {
                                 AccountCenterScreen(
-                                    restartApp = { route -> appState.clearAndNavigate(route) },
-                                    openScreen = { route -> appState.navigate(route) }
+                                    restartApp = { route -> appNavState.clearAndNavigate(route) },
+                                    openScreen = { route -> appNavState.navigate(route) }
                                 )
                             }
-                            authenticationGraph(appState)
-                            gameGraph(appState)
+                            authenticationGraph(appNavState)
+                            gameGraph(appNavState)
                         }
                     }
 
@@ -107,37 +93,52 @@ class MainActivity : ComponentActivity() {
 
     private fun configureFirebaseServices() {
         Firebase.auth.useEmulator(LOCALHOST, AUTH_PORT)
-        // Firebase.firestore.useEmulator(LOCALHOST, FIRESTORE_PORT)
+        Firebase.database.useEmulator(LOCALHOST, DATABASE_PORT)
     }
 }
 
 
 
-fun NavGraphBuilder.authenticationGraph(appState: MainAppState) {
+fun NavGraphBuilder.authenticationGraph(appNavState: AppNavState) {
     navigation<Route.AuthenticationGraph>(
         startDestination = Route.AuthenticationGraph.Login
     ){
         composable<Route.AuthenticationGraph.Login> {
             LoginScreen(
-                openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) }
+                openAndPopUp = { route, popUp -> appNavState.navigateAndPopUp(route, popUp) }
             )
         }
         composable<Route.AuthenticationGraph.Registration> {
             RegistrationScreen(
-                openAndPopUp = { route, popUp -> appState.navigateAndPopUp(route, popUp) }
+                openAndPopUp = { route, popUp -> appNavState.navigateAndPopUp(route, popUp) }
             )
         }
     }
 }
 
-fun NavGraphBuilder.gameGraph(appState: MainAppState) {
+fun NavGraphBuilder.gameGraph(appNavState: AppNavState) {
     navigation<Route.GameGraph>(
         startDestination = Route.GameGraph.Home
     ){
         composable<Route.GameGraph.Home> {
             HomeScreen(
-                restartApp = { route -> appState.clearAndNavigate(route) },
-                openScreen = { route -> appState.navigate(route) }
+                restartApp = { route -> appNavState.clearAndNavigate(route) },
+                openScreen = { route -> appNavState.navigate(route) }
+            )
+        }
+        composable<Route.GameGraph.Matchmaking> { /* entry -> */
+            // val matchmaking = entry.toRoute<Route.GameGraph.Matchmaking>()
+            MatchmakingScreen(
+                // matchmaking.mode,
+                restartApp = { route -> appNavState.clearAndNavigate(route) },
+                openAndPopUp = { route, popUp -> appNavState.navigateAndPopUp(route, popUp) },
+                popUpScreen = { appNavState.popUp() }
+            )
+        }
+        composable<Route.GameGraph.Game> {
+            GameScreen(
+                restartApp = { route -> appNavState.clearAndNavigate(route) },
+                popUpScreen = { appNavState.popUp() }
             )
         }
     }
@@ -151,8 +152,8 @@ fun rememberAppState(
     /* snackbarHostState: SnackbarHostState,
     snackbarManager: SnackbarManager = SnackbarManager,
     coroutineScope: CoroutineScope = rememberCoroutineScope() */
-): MainAppState {
+): AppNavState {
     return remember(navController/* , snackbarHostState, snackbarManager, coroutineScope */) {
-        MainAppState(navController/* , snackbarHostState, snackbarManager, coroutineScope */)
+        AppNavState(navController/* , snackbarHostState, snackbarManager, coroutineScope */)
     }
 }

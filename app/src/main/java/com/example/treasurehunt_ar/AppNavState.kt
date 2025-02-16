@@ -4,7 +4,7 @@ import androidx.compose.runtime.Stable
 import androidx.navigation.NavHostController
 
 @Stable
-class MainAppState(
+class AppNavState(
     val navController: NavHostController,
     /* private val snackbarHostState: SnackbarHostState,
     private val snackbarManager: SnackbarManager,
@@ -20,7 +20,15 @@ class MainAppState(
     }
 
     fun popUp() {
-        navController.popBackStack()
+        // navController.navigateUp()
+        //popUpScreen() has a bug when pressing multiple times
+        /* if (!navController.popBackStack()) {
+            navController.navigate(Route.GameGraph.Home)
+        } */
+        navController.popBackStack(
+            Route.GameGraph.Home,
+            false
+        )
     }
 
     fun navigate(route: Route) {

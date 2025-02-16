@@ -20,6 +20,8 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+
+# Keep the classes that are used by the Google Play Services (for ARCore API keyless authentication)
 -keep class com.google.android.gms.common.** { *; }
 -keep class com.google.android.gms.location.** { *; }
 -keep class com.google.android.gms.auth.** { *; }
@@ -28,5 +30,11 @@
 # Preserve classes that are used by the CredentialManager
 -if class androidx.credentials.CredentialManager
 -keep class androidx.credentials.playservices.** {
+  *;
+}
+
+# For Firebase Realtime Database
+-keepattributes Signature
+-keepclassmembers class com.example.treasurehunt_ar.** {
   *;
 }

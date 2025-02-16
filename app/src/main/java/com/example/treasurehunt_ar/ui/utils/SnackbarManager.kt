@@ -9,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CoroutineScope
@@ -81,7 +80,6 @@ fun SnackbarFlowHelper(
             }
         }
     }
-
 }
 
 
@@ -96,8 +94,4 @@ fun <T> ObserveAsEvents(flow: Flow<T>, key: Any? = null, onEvent: (T) -> Unit) {
             }
         }
     }
-}
-
-class SnackbarViewModel : ViewModel() {
-    val snackbarHostState = SnackbarHostState()
 }

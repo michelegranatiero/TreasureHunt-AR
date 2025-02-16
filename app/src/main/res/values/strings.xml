@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">TreasureHunt_AR</string>
+    <string name="app_name">TreasureHunt AR</string>
 
     <string name="app_game_name">AR Treasure Hunt</string>
     <string name="authenticate">Authenticate</string>
@@ -29,4 +29,6 @@
     <string name="update">Update</string>
     <string name="or">Or</string>
     <string name="sign_in_success">Sign In successful</string>
+    <string name="create_game">Create Game</string>
+    <string name="join_game">Join Game</string>
 </resources>

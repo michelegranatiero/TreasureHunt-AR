@@ -127,12 +127,12 @@ class OldTemplate : ComponentActivity() {
                                 //modifier = Modifier.align(Alignment.BottomCenter)
                             )
                             Button(
-                                onClick = { /*onResolveButtonPressed()*/ },
+                                onClick = { onResolveButtonPressed() },
                             ) {
                                 Text("Resolve")
                             }
                             Button(
-                                onClick = { /*onClearButtonPressed()*/ },
+                                onClick = { onClearButtonPressed() },
                             ) {
                                 Text("Clear Anchor")
                             }
@@ -372,7 +372,7 @@ fun ARScreen(modelState: State<String>) {
                                     anchor = anchor
                                 )
 
-                                /*future = _session.hostCloudAnchorAsync(anchor, 30) { string, state ->
+                                future = _session.hostCloudAnchorAsync(anchor, 30) { string, state ->
                                     if (onHostComplete(
                                             string,
                                             state
@@ -388,7 +388,7 @@ fun ARScreen(modelState: State<String>) {
                                             anchor = anchor
                                         )
                                     }
-                                }*/
+                                }
 
                             }
                     }

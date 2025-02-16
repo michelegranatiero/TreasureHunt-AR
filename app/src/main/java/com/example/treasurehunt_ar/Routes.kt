@@ -25,9 +25,18 @@ sealed interface Route {
     data object GameGraph : Route {
         @Serializable
         data object Home : Route
+        @Serializable
+        data class Matchmaking(val mode: MatchmakingMode) : Route
+        @Serializable
+        data object Game : Route
     }
 }
 
-const val LOCALHOST = "192.168.1.56" //"10.0.2.2"
+
+enum class MatchmakingMode {
+    CREATE, JOIN
+}
+
+const val LOCALHOST =  "10.0.2.2"
 const val AUTH_PORT = 9099
-const val FIRESTORE_PORT = 8080
+const val DATABASE_PORT = 9000

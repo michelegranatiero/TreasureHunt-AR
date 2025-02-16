@@ -1,11 +1,13 @@
 package com.example.treasurehunt_ar.model.service.module
 
 import com.example.treasurehunt_ar.model.service.AccountService
+import com.example.treasurehunt_ar.model.service.GamingService
 import com.example.treasurehunt_ar.model.service.impl.AccountServiceImpl
+import com.example.treasurehunt_ar.model.service.impl.GamingServiceImpl
 
 interface ServiceModule {
     val accountService: AccountService
-    // val storageService: StorageService
+    val gamingService: GamingService
 }
 
 class ServiceModuleImpl : ServiceModule {
@@ -13,7 +15,7 @@ class ServiceModuleImpl : ServiceModule {
         AccountServiceImpl()
     }
 
-    // override val storageService: StorageService by lazy {
-    //     StorageServiceImpl()
-    // }
+    override val gamingService: GamingService by lazy {
+        GamingServiceImpl(accountService)
+    }
 }

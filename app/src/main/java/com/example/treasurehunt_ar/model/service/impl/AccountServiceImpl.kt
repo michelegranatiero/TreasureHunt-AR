@@ -17,25 +17,27 @@ import kotlinx.coroutines.tasks.await
 
 class AccountServiceImpl: AccountService {
 
+    private val auth = Firebase.auth
+
     override val currentUser: Flow<User?>
         get() = callbackFlow {
             val listener =
                 FirebaseAuth.AuthStateListener { auth ->
-                    this.trySend(auth.currentUser?.let { User(it.uid) })
+                    this.trySend(auth.currentUser.toAppUser())
                 }
-            Firebase.auth.addAuthStateListener(listener)
-            awaitClose { Firebase.auth.removeAuthStateListener(listener) }
+            auth.addAuthStateListener(listener)
+            awaitClose { auth.removeAuthStateListener(listener) }
         }
 
     override val currentUserId: String
-        get() = Firebase.auth.currentUser?.uid.orEmpty()
+        get() = auth.currentUser?.uid.orEmpty()
 
     override fun hasUser(): Boolean {
-        return Firebase.auth.currentUser != null
+        return auth.currentUser != null
     }
 
     override fun getUserProfile(): User {
-        return Firebase.auth.currentUser.toAppUser()
+        return auth.currentUser.toAppUser()
     }
 
     override suspend fun updateDisplayName(newDisplayName: String) {
@@ -43,50 +45,50 @@ class AccountServiceImpl: AccountService {
             displayName = newDisplayName
         }
 
-        Firebase.auth.currentUser!!.updateProfile(profileUpdates).await()
+        auth.currentUser!!.updateProfile(profileUpdates).await()
     }
 
     override suspend fun signInWithEmail(email: String, password: String) {
-        Firebase.auth.signInWithEmailAndPassword(email, password).await()
+        auth.signInWithEmailAndPassword(email, password).await()
     }
 
     override suspend fun signUpWithEmail(email: String, password: String) {
-        Firebase.auth.createUserWithEmailAndPassword(email, password).await()
+        auth.createUserWithEmailAndPassword(email, password).await()
     }
     // OR (IF USER HAS ANONYMOUS ACCOUNT AT STARTUP)
     override suspend fun linkAccountWithEmail(email: String, password: String) {
         val credential = EmailAuthProvider.getCredential(email, password)
-        Firebase.auth.currentUser!!.linkWithCredential(credential).await()
+        auth.currentUser!!.linkWithCredential(credential).await()
     }
 
     override suspend fun signInWithGoogle(idToken: String) {
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-        Firebase.auth.signInWithCredential(firebaseCredential).await()
+        auth.signInWithCredential(firebaseCredential).await()
     }
 
     // ONLY WORKS IF USER HAS ANONYMOUS ACCOUNT AT STARTUP
     override suspend fun linkAccountWithGoogle(idToken: String) {
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-        // note that Firebase.auth.currentUser is null if user does not have anonymous account
+        // note that auth.currentUser is null if user does not have anonymous account
         try {
             // Prova a collegare l'account anonimo a quello Google
-            Firebase.auth.currentUser!!.linkWithCredential(firebaseCredential).await()
+            auth.currentUser!!.linkWithCredential(firebaseCredential).await()
         } catch (e: FirebaseAuthUserCollisionException) {
             // Se l'account Google è già linkato, effettua il sign-in
-            Firebase.auth.signInWithCredential(firebaseCredential).await()
+            auth.signInWithCredential(firebaseCredential).await()
         }
     }
 
     override suspend fun createAnonymousAccount() {
-        Firebase.auth.signInAnonymously().await()
+        auth.signInAnonymously().await()
     }
 
     override suspend fun signOut() {
-        Firebase.auth.signOut()
+        auth.signOut()
     }
 
     override suspend fun deleteAccount() {
-        Firebase.auth.currentUser!!.delete().await()
+        auth.currentUser!!.delete().await()
     }
 
     private fun FirebaseUser?.toAppUser(): User {
