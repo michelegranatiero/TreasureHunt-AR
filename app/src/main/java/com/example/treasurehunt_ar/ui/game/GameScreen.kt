@@ -40,7 +40,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.treasurehunt_ar.Route
 import com.example.treasurehunt_ar.TreasureHuntApplication
+import com.example.treasurehunt_ar.model.AnchorData
 import com.example.treasurehunt_ar.model.GameState
+import com.example.treasurehunt_ar.mytemplate.createAnchorNode
 import com.example.treasurehunt_ar.ui.utils.ExitDialog
 import com.example.treasurehunt_ar.ui.utils.customViewModelFactory
 import com.google.android.filament.Engine
@@ -48,7 +50,9 @@ import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Pose
+import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
+import com.google.ar.core.exceptions.NotTrackingException
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.node.AnchorNode
@@ -57,6 +61,7 @@ import io.github.sceneview.ar.rememberARCameraStream
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
+import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
@@ -80,15 +85,12 @@ fun GameScreen(
         }
     )
 ) {
-
-
-
     LaunchedEffect(Unit) { viewModel.initialize(restartApp) }
 
     val uiState by viewModel.uiState.collectAsState()
     val tappedAnchors = remember { mutableStateListOf<String>() }
     val game by viewModel.game.collectAsState()
-    val currentModel = remember { mutableStateOf("burger") }
+    val currentModel = remember { mutableStateOf("chest5") }
 
     // Setup AR components
     var frame by remember { mutableStateOf<Frame?>(null) }
@@ -104,11 +106,12 @@ fun GameScreen(
 
     // val childNodes by viewModel.childNodes.collectAsState()
     val childNodes = remember { mutableStateListOf<Node>() }
-    // LaunchedEffect(childNodes) { viewModel.childNodes = childNodes }
+    LaunchedEffect(childNodes) { viewModel.childNodes = childNodes }
 
     // Lista per i nodi degli anchor avversari risolti (da posizionare ma non visibili)
     val opponentNodes = remember { mutableStateListOf<AnchorNode>() }
     LaunchedEffect(uiState.canAddOpponentAnchors) {
+        Log.d("GameScreen1", "2 resolvedOpponentAnchors: ${uiState.resolvedOpponentAnchors.size}")
         uiState.resolvedOpponentAnchors.forEach { (resolvedAnchor, anchorData) ->
             if (opponentNodes.none { it.anchor == resolvedAnchor }) {
                 val opponentNode = createAnchorNode(
@@ -137,7 +140,6 @@ fun GameScreen(
                             val dy = cameraPosition.y - anchorPosition.y
                             val dz = cameraPosition.z - anchorPosition.z
                             val distance = sqrt(dx * dx + dy * dy + dz * dz)
-                            Log.d("GameScreen", "Checking distance for anchor: $distance")
                             anchorNode.setModelVisibility(distance < 2f)
                         }
                     }
@@ -510,6 +512,7 @@ fun createAnchorNode(
 
     val modelNode = ModelNode(modelInstance, scaleToUnits = 0.25f)
         .apply { // child of anchorNode
+            rotation = Rotation(0f,-90f,0f) //for chest
             isPositionEditable = false // true by default
             isRotationEditable = false
             // isEditable = true
@@ -534,7 +537,6 @@ fun createAnchorNode(
             boundingBoxNode.isVisible =
                 editingTransforms.isNotEmpty() // check if the model is being edited
         }
-        // it.onScale = { detector, e, scaleFactor -> /* */ }
     }
     return anchorNode
 }
@@ -560,3 +562,66 @@ fun AnchorNode.setModelVisibility(visible: Boolean) {
 fun Pose.toVector3(): Vector3 {
     return Vector3(tx(), ty(), tz())
 }
+
+
+/* suspend fun recreateAnchor(anchorData: AnchorData, session: Session): Anchor {
+    val translation = anchorData.position?.toFloatArray() ?: floatArrayOf(0f, 0f, 0f)
+    val rotation = anchorData.rotation?.toFloatArray() ?: floatArrayOf(0f, 0f, 0f, 1f)
+    val pose = Pose(translation, rotation)
+    // Tenta di creare l'Anchor finché la sessione non è tracking
+    while (true) {
+        try {
+            return session.createAnchor(pose)
+        } catch (e: NotTrackingException) {
+            // La sessione non è tracking: attendi 100ms e riprova
+            delay(100)
+        }
+    }
+} */
+
+// TRY TO USE THIS IN GAME SCREEN COMPOSABLE
+
+/* LaunchedEffect( *//*game.state, *//*  childNodes.isEmpty()) {
+    if (childNodes.isEmpty()) {
+        when (game.state) {
+            GameState.STARTED -> {
+                // Fase di posizionamento: ricrea i Node dai dati persistenti di localAnchors
+                viewModel.arSession?.let { session ->
+                    uiState.localAnchors.forEach { anchorData ->
+                        val recreatedAnchor = recreateAnchor(anchorData, session)
+                        val node = createAnchorNode(
+                            engine = engine,
+                            modelLoader = modelLoader,
+                            materialLoader = materialLoader,
+                            model = anchorData.model,
+                            anchor = recreatedAnchor,
+                            visible = true
+                        )
+                        childNodes.add(node)
+                    }
+                }
+            }
+            GameState.HUNTING -> {
+                // Fase Hunting: ricrea i Node degli opponent solo se il flag è true
+                if (uiState.canAddOpponentAnchors) {
+                    viewModel.arSession?.let { session ->
+                        Log.d("GameScreen1", "1 resolvedOpponentAnchors: ${uiState.resolvedOpponentAnchors.size}")
+                        uiState.resolvedOpponentAnchors.forEach { (resolvedAnchor, anchorData) ->
+                            // Per gli opponent, normalmente i resolvedAnchor sono già validi
+                            val node = createAnchorNode(
+                                engine = engine,
+                                modelLoader = modelLoader,
+                                materialLoader = materialLoader,
+                                model = anchorData.model,
+                                anchor = resolvedAnchor,
+                                visible = false
+                            )
+                            childNodes.add(node)
+                        }
+                    }
+                }
+            }
+            else -> {  *//* Altri stati se necessari *//*  }
+        }
+    }
+} */

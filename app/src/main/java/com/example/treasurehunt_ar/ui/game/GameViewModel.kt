@@ -1,12 +1,10 @@
 package com.example.treasurehunt_ar.ui.game
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.example.treasurehunt_ar.Route
-import com.example.treasurehunt_ar.TreasureHuntApplication.Companion.serviceModule
 import com.example.treasurehunt_ar.model.AnchorData
 import com.example.treasurehunt_ar.model.Game
 import com.example.treasurehunt_ar.model.GameState
@@ -46,16 +44,13 @@ class GameViewModel(
     private val _game = MutableStateFlow<Game>(Game())
     val game: StateFlow<Game> = _game.asStateFlow()
 
-    private var arSession: Session? = null
-
+    var arSession: Session? = null
+        private set
     fun updateArSession(session: Session) {
         arSession = session
     }
 
     lateinit var childNodes: MutableList<Node>
-    //child nodes as stateflow
-    // private val _childNodes = MutableStateFlow<MutableList<Node>>(mutableListOf())
-    // val childNodes: StateFlow<MutableList<Node>> = _childNodes.asStateFlow()
 
     var showExitConfirmation by mutableStateOf(false)
         private set
@@ -167,7 +162,9 @@ class GameViewModel(
                 val cloudAnchorId = serviceModule.gamingService.hostCloudAnchor(arSession!!, anchor)
                 val anchorData = AnchorData(
                     cloudAnchorId = cloudAnchorId,
-                    model = model
+                    model = model,
+                    position = anchor.pose.translation.toList(),
+                    rotation = anchor.pose.rotationQuaternion.toList()
                 )
                 _uiState.value = _uiState.value.copy(
                     localAnchors = _uiState.value.localAnchors + anchorData

@@ -51,11 +51,15 @@ import com.google.ar.core.TrackingFailureReason
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
+import io.github.sceneview.ar.localRotation
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.rememberARCameraNode
 import io.github.sceneview.ar.rememberARCameraStream
+import io.github.sceneview.collision.Quaternion
+import io.github.sceneview.collision.Vector3
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
+import io.github.sceneview.math.Rotation
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
@@ -372,7 +376,7 @@ fun ARScreen(modelState: State<String>) {
                                     anchor = anchor
                                 )
 
-                                future = _session.hostCloudAnchorAsync(anchor, 30) { string, state ->
+                                /* future = _session.hostCloudAnchorAsync(anchor, 30) { string, state ->
                                     if (onHostComplete(
                                             string,
                                             state
@@ -388,7 +392,7 @@ fun ARScreen(modelState: State<String>) {
                                             anchor = anchor
                                         )
                                     }
-                                }
+                                } */
 
                             }
                     }
@@ -473,7 +477,7 @@ fun ARScreen(modelState: State<String>) {
             // cameraStream = rememberARCameraStream(materialLoader),
             cameraStream = rememberARCameraStream(materialLoader).apply {
                 // Enable occlusion
-                isDepthOcclusionEnabled = true
+                // isDepthOcclusionEnabled = true
             },
             // The session is ready to be accessed.
             onSessionCreated = { session ->
@@ -563,11 +567,13 @@ fun createAnchorNode(
     val modelNode = ModelNode(
         modelLoader.createInstance(
             modelLoader.createModel(
-                assetFileLocation = "models/${model}.glb"
+                // assetFileLocation = "models/${model}.glb"
+                assetFileLocation = "models/chest1.glb"
             )
         )!!, // !! asserts that value is not null (even if it is a nullable type)
         scaleToUnits = 0.25f
     ).apply {
+        // rotation = Rotation(0f, -90f, 0f)
         // isEditable = true
         // isScaleEditable = true
         // isPositionEditable = true
