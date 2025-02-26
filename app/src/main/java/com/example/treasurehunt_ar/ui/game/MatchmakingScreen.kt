@@ -1,22 +1,27 @@
 package com.example.treasurehunt_ar.ui.game
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
@@ -84,22 +90,61 @@ fun MatchmakingCreateScreen(
     uiState: MatchmakingUiState,
     viewModel: MatchmakingViewModel,
     popUpScreen: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     val clipboardManager = LocalClipboardManager.current
 
-    Text("Game Code:")
-    TextButton(
-        onClick = {
-            clipboardManager.setText(AnnotatedString(uiState.roomCode))
-        },
-        modifier = Modifier.padding(16.dp)
 
-    ) { Text(uiState.roomCode)}
+    if (uiState.game?.state != GameState.STARTED) {
+        Text(text = "Select number of anchors to find:")
 
-    if (uiState.roomCode != "") {
-        QRCodeDisplay(uiState.roomCode)
+        val options = (1..5).toList()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            options.forEach { value ->
+                ElevatedFilterChip(
+                    selected = uiState.numberOfAnchors == value,
+                    onClick = { viewModel.updateNumAnchors(value) },
+                    label = { Text(
+                        value.toString(),
+                        fontSize = 24.sp,
+                        modifier = Modifier.padding(2.dp, 8.dp)
+                    )
+                    }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.padding(16.dp))
+        Text("Game Code:", fontSize = 24.sp)
+        TextButton(
+            onClick = {
+                clipboardManager.setText(AnnotatedString(uiState.roomCode))
+            },
+            modifier = Modifier.padding(8.dp)
+
+        ) { Text(uiState.roomCode)}
+
+        val qrCodeSizeDp = 200f
+        Column(
+            modifier = Modifier
+                .background(Color.White)
+                .size(qrCodeSizeDp.dp, qrCodeSizeDp.dp)
+        ) {
+            if (uiState.roomCode != "") {
+                QRCodeDisplay(uiState.roomCode, sizeInDp = qrCodeSizeDp)
+            }
+        }
+        Spacer(modifier = Modifier.padding(16.dp))
     }
+
+
+
+
 
     when (uiState.game?.state) {
         GameState.JOINED -> {
@@ -115,16 +160,17 @@ fun MatchmakingCreateScreen(
         GameState.STARTED -> {
             Text(
                 "Starting Game...",
-                modifier = Modifier.padding(16.dp)
             )
-            CircularProgressIndicator()
+            CircularProgressIndicator(modifier = Modifier.padding(16.dp))
         }
         else -> {
+            CircularProgressIndicator(modifier = Modifier.padding(8.dp))
             Text(
                 "Waiting for a player to join...",
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(8.dp)
             )
-            CircularProgressIndicator()
+            Spacer(modifier = Modifier.padding(8.dp))
+
         }
     }
 
@@ -146,6 +192,7 @@ fun MatchmakingJoinScreen(
     uiState: MatchmakingUiState,
     viewModel: MatchmakingViewModel,
     popUpScreen: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -180,7 +227,7 @@ fun MatchmakingJoinScreen(
     } else if (uiState.game == null) { // GAME NOT JOINED YET
         if (uiState.joiningRoom) {
             Text("Joining Game...")
-            CircularProgressIndicator()
+            CircularProgressIndicator(modifier = Modifier.padding(16.dp))
         }else{
             Text("Join a Game:")
             QRScannerButton ("Scan QR code", onScanComplete = { code ->
@@ -219,3 +266,4 @@ fun MatchmakingJoinScreen(
         BackHandler { viewModel.exitMatchmaking(popUpScreen) }
     }
 }
+

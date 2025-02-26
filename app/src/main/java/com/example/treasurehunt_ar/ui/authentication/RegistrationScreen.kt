@@ -56,14 +56,6 @@ fun RegistrationScreen(
     val password = viewModel.password.collectAsState()
     val confirmPassword = viewModel.confirmPassword.collectAsState()
 
-    /* val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        launchCredManBottomSheet(context) { result ->
-            viewModel.onSignUpWithGoogle(result, openAndPopUp)
-        }
-    } */
-
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -167,24 +159,6 @@ fun RegistrationScreen(
                 modifier = modifier.padding(0.dp, 6.dp)
             )
         }
-
-        /* Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp))
-
-        Text(text = stringResource(R.string.or), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
-
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp))
-
-        AuthenticationButton(R.string.sign_up_with_google) { credential ->
-            viewModel.onSignUpWithGoogle(credential, openAndPopUp)
-        }
-
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)) */
 
         TextButton(onClick = { viewModel.onSignInClick(openAndPopUp) }) {
             Text(text = stringResource(R.string.sign_in_description), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)

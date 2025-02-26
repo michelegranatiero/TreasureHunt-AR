@@ -1,6 +1,5 @@
 package com.example.treasurehunt_ar.ui.game
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
@@ -24,7 +23,8 @@ data class MatchmakingUiState(
     val matchmakingMode: MatchmakingMode,
     val roomCode: String = "",
     val joiningRoom: Boolean = false,
-    val game: Game? = null
+    val game: Game? = null,
+    var numberOfAnchors: Int = 1,
 )
 
 class MatchmakingViewModel(
@@ -43,7 +43,7 @@ class MatchmakingViewModel(
 
     private var isInitialized = false
     fun initialize(restartApp: (Route) -> Unit, openAndPopUp: (Route, Route) -> Unit) {
-        navigateAndPopUp = openAndPopUp //on every recomposition, otherwise crash
+        navigateAndPopUp = openAndPopUp //on every recomposition, otherwise app crashes
 
         if (isInitialized) return
         isInitialized = true
@@ -59,7 +59,18 @@ class MatchmakingViewModel(
         _uiState.value = _uiState.value.copy(roomCode = code)
     }
 
-    fun setJoiningRoomFlag(joining: Boolean) {
+    fun updateNumAnchors(value: Int) {
+        _uiState.value = _uiState.value.copy(numberOfAnchors = value)
+    }
+
+    private fun updateGameNumAnchors() {
+        launchCatching {
+            /* _uiState.value = _uiState.value.copy(game = _uiState.value.game?.copy(numberOfAnchors = _uiState.value.numberOfAnchors)) */
+            serviceModule.gamingService.updateGameField("numberOfAnchors", _uiState.value.numberOfAnchors)
+        }
+    }
+
+    private fun setJoiningRoomFlag(joining: Boolean) {
         _uiState.value = _uiState.value.copy(joiningRoom = joining)
     }
 
@@ -100,7 +111,8 @@ class MatchmakingViewModel(
 
     fun startGame() {
         launchCatching {
-            serviceModule.gamingService.startGame() // also need to initialize things ......
+            updateGameNumAnchors() // update number of anchors to find in game
+            serviceModule.gamingService.startGame()
         }
     }
 
@@ -130,6 +142,7 @@ class MatchmakingViewModel(
 
     private fun handleRoomCancelled() {
         gameObservationJob?.cancel()
+        serviceModule.gamingService.onExitGame()
         _uiState.value = MatchmakingUiState(matchmakingMode = mode)
         if (mode == MatchmakingMode.CREATE) {
             createRoom()

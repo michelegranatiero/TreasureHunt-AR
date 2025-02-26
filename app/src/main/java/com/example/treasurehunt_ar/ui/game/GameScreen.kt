@@ -3,7 +3,6 @@ package com.example.treasurehunt_ar.ui.game
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,15 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.treasurehunt_ar.Route
 import com.example.treasurehunt_ar.TreasureHuntApplication
-import com.example.treasurehunt_ar.model.AnchorData
 import com.example.treasurehunt_ar.model.GameState
-import com.example.treasurehunt_ar.mytemplate.createAnchorNode
-import com.example.treasurehunt_ar.ui.utils.ExitDialog
+import com.example.treasurehunt_ar.ui.utils.components.ExitDialog
 import com.example.treasurehunt_ar.ui.utils.customViewModelFactory
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
@@ -52,6 +50,7 @@ import com.google.ar.core.Frame
 import com.google.ar.core.Pose
 import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
+import com.google.ar.core.TrackingState
 import com.google.ar.core.exceptions.NotTrackingException
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
@@ -92,6 +91,8 @@ fun GameScreen(
     val game by viewModel.game.collectAsState()
     val currentModel = remember { mutableStateOf("chest5") }
 
+    var mappingQuality by remember { mutableStateOf(Session.FeatureMapQuality.INSUFFICIENT) }
+
     // Setup AR components
     var frame by remember { mutableStateOf<Frame?>(null) }
     val engine = rememberEngine()
@@ -129,7 +130,7 @@ fun GameScreen(
     }
 
     LaunchedEffect(opponentNodes.size) {
-        if (opponentNodes.size == GameViewModel.REQUIRED_ANCHORS_COUNT) {
+        if (opponentNodes.size == game.numberOfAnchors) {
             while (true) {
                 frame?.let { currentFrame ->
                     val cameraPosition = currentFrame.camera.pose.toVector3()
@@ -145,19 +146,18 @@ fun GameScreen(
                     }
 
                 }
-                delay(500) // controlla ogni mezzo secondo
+                delay(500) // controlla ogni 0.5 secondi
             }
         }
     }
 
     LaunchedEffect(game.confirmedAnchorsJoiner, game.confirmedAnchorsCreator) {
         val confirmed = if (viewModel.userIsCreator()) game.confirmedAnchorsCreator
-        else game.confirmedAnchorsJoiner
+                        else game.confirmedAnchorsJoiner
         if (confirmed) {
             planeRenderer = false
         }
     }
-
 
     Box(modifier = Modifier.fillMaxSize()) {
         ARScene(
@@ -171,7 +171,22 @@ fun GameScreen(
             collisionSystem = collisionSystem,
             childNodes = childNodes,
             planeRenderer = planeRenderer,
-            onSessionUpdated = { session, updatedFrame -> frame = updatedFrame },
+            onSessionUpdated = { session, updatedFrame ->
+                frame = updatedFrame
+
+                if (updatedFrame.camera.trackingState == TrackingState.TRACKING){
+                    try {
+                        mappingQuality = session.estimateFeatureMapQualityForHosting(updatedFrame.camera.pose)
+                    } catch (e: NotTrackingException) {
+                        Log.w("GameScreen", "Mapping quality not available: ${e.message}")
+                    } catch (e: Exception) {
+                        Log.e("GameScreen", "Error estimating feature map quality: ${e.message}")
+                    }
+                } else {
+                    Log.w("GameScreen", "Camera not tracking; skipping mapping quality update.")
+                }
+
+            },
             cameraStream = rememberARCameraStream(materialLoader).apply {
                 // isDepthOcclusionEnabled = true
             },
@@ -186,28 +201,55 @@ fun GameScreen(
             },
             onGestureListener = rememberOnGestureListener(
                 onSingleTapConfirmed = { motionEvent, tappedNode ->
-                    if (game.state == GameState.STARTED && !uiState.isHosting) {
+                    if (game.state == GameState.STARTED /* && !uiState.isHosting */) {
                         // In fase di posizionamento, se non hai già raggiunto il numero massimo di anchor
-                        if (tappedNode == null && uiState.localAnchors.size < GameViewModel.REQUIRED_ANCHORS_COUNT) {
-                            val hitResult = frame?.hitTest(motionEvent.x, motionEvent.y)
-                                ?.firstOrNull { it.createAnchorOrNull() != null }
-                            hitResult?.createAnchorOrNull()?.let { anchor ->
-                                viewModel.onAnchorPlaced(anchor, currentModel.value,
-                                    onSuccess = { hostedAnchor ->
-                                        // Solo dopo il success dell'hosting crea AnchorNode e aggiungilo al mondo AR
-                                        val anchorNode = createAnchorNode(
-                                            engine = engine,
-                                            modelLoader = modelLoader,
-                                            materialLoader = materialLoader,
-                                            model = currentModel.value,
-                                            anchor = hostedAnchor
-                                        )
-                                        childNodes.add(anchorNode)
-                                    },
-                                    onFailure = { error ->
-                                        Log.e("GameScreen", "Error hosting anchor: ${error.message}")
-                                    }
-                                )
+                        if (tappedNode == null && childNodes.size < game.numberOfAnchors) {
+                            if (mappingQuality != Session.FeatureMapQuality.INSUFFICIENT) {
+                                val hitResult = frame?.hitTest(motionEvent.x, motionEvent.y)
+                                    ?.firstOrNull { it.createAnchorOrNull() != null }
+                                hitResult?.createAnchorOrNull()?.let { anchor ->
+
+                                    val anchorNode = createAnchorNode(
+                                        engine = engine,
+                                        modelLoader = modelLoader,
+                                        materialLoader = materialLoader,
+                                        model = currentModel.value,
+                                        anchor = anchor
+                                    )
+                                    childNodes.add(anchorNode)
+
+                                    viewModel.onAnchorPlaced(anchor, currentModel.value,
+                                        onSuccess = { _ ->
+                                            // leave anchor
+                                        },
+                                        onFailure = { error ->
+                                            // Se c'è un errore durante l'hosting, rimuovi il nodo per non mostrare un oggetto "non hostato"
+                                            childNodes.remove(anchorNode)
+                                            Log.e("GameScreen", "Error hosting anchor: ${error.message}")
+                                        }
+                                    )
+
+
+                                    /* viewModel.onAnchorPlaced(anchor, currentModel.value,
+                                        onSuccess = { hostedAnchor ->
+                                            // Solo dopo il success dell'hosting crea AnchorNode e aggiungilo al mondo AR
+                                            val anchorNode = createAnchorNode(
+                                                engine = engine,
+                                                modelLoader = modelLoader,
+                                                materialLoader = materialLoader,
+                                                model = currentModel.value,
+                                                anchor = hostedAnchor
+                                            )
+                                            childNodes.add(anchorNode)
+                                        },
+                                        onFailure = { error ->
+                                            Log.e("GameScreen", "Error hosting anchor: ${error.message}")
+                                        }
+                                    ) */
+                                }
+                            }else{
+                                // Mostra un messaggio per informare l'utente che la qualità è insufficiente
+                                viewModel.onMappingQualityInsufficient()
                             }
                         }
                     } else if (game.state == GameState.HUNTING && uiState.canAddOpponentAnchors) {
@@ -232,6 +274,42 @@ fun GameScreen(
             onTrackingFailureChanged = { trackingFailureReason = it }
         )
 
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+            contentAlignment = Alignment.TopEnd
+        ) {
+            val qualityText = when(mappingQuality) {
+                Session.FeatureMapQuality.GOOD -> "Good Quality"
+                Session.FeatureMapQuality.SUFFICIENT -> "Sufficient Quality"
+                else -> "Insufficient Quality... try moving around!"
+            }
+            val qualityColor = when(mappingQuality) {
+                Session.FeatureMapQuality.GOOD -> Color.Green.copy(alpha = 0.6f)
+                Session.FeatureMapQuality.SUFFICIENT -> Color(255,165,0).copy(alpha = 0.6f) // Orange
+                else -> Color.Red.copy(alpha = 0.6f)
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(WindowInsets.safeContent.asPaddingValues())
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = qualityColor)
+                ) {
+                    Text(
+                        text = qualityText,
+                        fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
+                        color = Color.White,
+                        modifier = Modifier.padding(16.dp, 8.dp)
+                    )
+                }
+            }
+        }
+
+
         // Overlay UI in basso
         Column(
             modifier = Modifier
@@ -244,7 +322,7 @@ fun GameScreen(
             if (game.state == GameState.STARTED) {
                 val confirmed = if (viewModel.userIsCreator()) game.confirmedAnchorsCreator else game.confirmedAnchorsJoiner
                 if (!confirmed) {
-                    if (uiState.localAnchors.size == GameViewModel.REQUIRED_ANCHORS_COUNT && !uiState.isHosting) {
+                    if (uiState.localCloudAnchors.size == game.numberOfAnchors && !uiState.isHosting) {
                         //placed anchors are all placed but not confirmed -> show confirm button
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -257,22 +335,27 @@ fun GameScreen(
                                 Text("Confirm Anchors", color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
-                    } else if (!uiState.isHosting) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.CenterHorizontally),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) {
-                            Text(
-                                text = "Place ${GameViewModel.REQUIRED_ANCHORS_COUNT - uiState.localAnchors.size} objects on a plane",
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.onSecondary,
+                    }else{
+                        if (uiState.isHosting){
+                            CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                        }
+                        if (game.numberOfAnchors - childNodes.size > 0) {
+                            Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(8.dp),
-                                textAlign = TextAlign.Center
-                            )
+                                    .align(Alignment.CenterHorizontally),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            ) {
+                                Text(
+                                    text = "Place ${game.numberOfAnchors - childNodes.size} objects on a plane",
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onSecondary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
                 } else {
@@ -294,7 +377,7 @@ fun GameScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (uiState.resolvedOpponentAnchors.size < GameViewModel.REQUIRED_ANCHORS_COUNT) {
+                    if (uiState.resolvedOpponentAnchors.size < game.numberOfAnchors) {
                         if (uiState.showRetryButton) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -319,18 +402,17 @@ fun GameScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
                                     Text(
-                                        text = "Resolving ${GameViewModel.REQUIRED_ANCHORS_COUNT - uiState.resolvedOpponentAnchors.size} opponent anchors...",
+                                        text = "Resolving ${game.numberOfAnchors - uiState.resolvedOpponentAnchors.size} opponent anchors...",
                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                                         textAlign = TextAlign.Center
                                     )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    CircularProgressIndicator()
+                                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                                 }
                             }
                         }
                     } else if (uiState.canAddOpponentAnchors) {
                         // Indicatore findings/total
-                        val totalAnchors = GameViewModel.REQUIRED_ANCHORS_COUNT
+                        val totalAnchors = game.numberOfAnchors
 
                         val (user, opponent) = if (viewModel.userIsCreator()) {
                             game.creator to game.joiner
@@ -452,7 +534,7 @@ fun GameScreen(
             }
 
         }
-        if (uiState.isHosting) { // hosting anchor (waiting with circular progress)
+        /* if (uiState.isHosting) { // hosting anchor (waiting with circular progress)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -467,7 +549,7 @@ fun GameScreen(
                     Text("Hosting anchor...", fontSize = 18.sp, color = Color.White)
                 }
             }
-        }
+        } */
 
     }
 
@@ -564,64 +646,26 @@ fun Pose.toVector3(): Vector3 {
 }
 
 
-/* suspend fun recreateAnchor(anchorData: AnchorData, session: Session): Anchor {
-    val translation = anchorData.position?.toFloatArray() ?: floatArrayOf(0f, 0f, 0f)
-    val rotation = anchorData.rotation?.toFloatArray() ?: floatArrayOf(0f, 0f, 0f, 1f)
-    val pose = Pose(translation, rotation)
-    // Tenta di creare l'Anchor finché la sessione non è tracking
-    while (true) {
-        try {
-            return session.createAnchor(pose)
-        } catch (e: NotTrackingException) {
-            // La sessione non è tracking: attendi 100ms e riprova
-            delay(100)
+@Preview(showSystemUi = true)
+@Composable
+fun MappingQualityPreview() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .padding(WindowInsets.safeContent.asPaddingValues())
+            .padding(16.dp)
+            .fillMaxWidth(),
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.6f))
+        ) {
+            Text(
+                text = "Insufficient Quality... try moving around!",
+                fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
+                // fontSize = 24.sp,
+                color = Color.White,
+                modifier = Modifier.padding(16.dp, 8.dp)
+            )
         }
     }
-} */
-
-// TRY TO USE THIS IN GAME SCREEN COMPOSABLE
-
-/* LaunchedEffect( *//*game.state, *//*  childNodes.isEmpty()) {
-    if (childNodes.isEmpty()) {
-        when (game.state) {
-            GameState.STARTED -> {
-                // Fase di posizionamento: ricrea i Node dai dati persistenti di localAnchors
-                viewModel.arSession?.let { session ->
-                    uiState.localAnchors.forEach { anchorData ->
-                        val recreatedAnchor = recreateAnchor(anchorData, session)
-                        val node = createAnchorNode(
-                            engine = engine,
-                            modelLoader = modelLoader,
-                            materialLoader = materialLoader,
-                            model = anchorData.model,
-                            anchor = recreatedAnchor,
-                            visible = true
-                        )
-                        childNodes.add(node)
-                    }
-                }
-            }
-            GameState.HUNTING -> {
-                // Fase Hunting: ricrea i Node degli opponent solo se il flag è true
-                if (uiState.canAddOpponentAnchors) {
-                    viewModel.arSession?.let { session ->
-                        Log.d("GameScreen1", "1 resolvedOpponentAnchors: ${uiState.resolvedOpponentAnchors.size}")
-                        uiState.resolvedOpponentAnchors.forEach { (resolvedAnchor, anchorData) ->
-                            // Per gli opponent, normalmente i resolvedAnchor sono già validi
-                            val node = createAnchorNode(
-                                engine = engine,
-                                modelLoader = modelLoader,
-                                materialLoader = materialLoader,
-                                model = anchorData.model,
-                                anchor = resolvedAnchor,
-                                visible = false
-                            )
-                            childNodes.add(node)
-                        }
-                    }
-                }
-            }
-            else -> {  *//* Altri stati se necessari *//*  }
-        }
-    }
-} */
+}

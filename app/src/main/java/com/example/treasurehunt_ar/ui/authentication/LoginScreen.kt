@@ -1,6 +1,5 @@
 package com.example.treasurehunt_ar.ui.authentication
 
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -30,7 +29,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -161,9 +159,6 @@ fun LoginScreen(
 
         AuthenticationButton(buttonText = R.string.sign_in_with_google) { credential ->
             viewModel.onSignInWithGoogle(credential, openAndPopUp)
-            // SnackbarManager.showMessage(context.getString(R.string.sign_in_success))
-            // Toast.makeText(context, "Sign in success", Toast.LENGTH_SHORT).show()
-
         }
 
         Spacer(modifier = Modifier
@@ -173,22 +168,5 @@ fun LoginScreen(
         TextButton(onClick = { viewModel.onSignUpClick(openAndPopUp) }) {
             Text(text = stringResource(R.string.sign_up_description), fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
         }
-
-        /* Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp))
-
-        Button(
-            onClick = { viewModel.onSignInAnonymous(openAndPopUp) },
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(16.dp, 0.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.sign_in_with_anonymous),
-                fontSize = 16.sp,
-                modifier = modifier.padding(0.dp, 6.dp)
-            )
-        } */
     }
 }

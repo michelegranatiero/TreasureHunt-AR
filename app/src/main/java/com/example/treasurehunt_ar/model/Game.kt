@@ -10,6 +10,7 @@ data class Game(
     var state: GameState = GameState.OPEN,
     val creator: PlayerData? = null,
     var joiner: PlayerData? = null,
+    var numberOfAnchors: Int = 1,
     var anchorsCreator: List<AnchorData>? = null,
     var anchorsJoiner: List<AnchorData>? = null,
     var confirmedAnchorsCreator: Boolean = false,    // Flag di conferma del posizionamento per il creator

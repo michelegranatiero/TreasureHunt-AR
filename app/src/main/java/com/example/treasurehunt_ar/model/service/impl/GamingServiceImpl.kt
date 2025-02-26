@@ -1,7 +1,6 @@
 package com.example.treasurehunt_ar.model.service.impl
 
 import android.util.Log
-import com.example.treasurehunt_ar.TreasureHuntApplication.Companion.serviceModule
 import com.example.treasurehunt_ar.model.AnchorData
 import com.example.treasurehunt_ar.model.Game
 import com.example.treasurehunt_ar.model.GameState
@@ -200,7 +199,7 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
 
     private var presenceListener: ValueEventListener? = null
 
-    override fun setupPresence() {
+    private fun setupPresence() {
         val roomCode = _roomCode.value
         if (roomCode.isEmpty()) return
 
@@ -213,7 +212,7 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
         presenceListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
-                    // room not exists anymore: cancel onDisconnect operations and remove listener
+                    // room does not exist anymore: cancel onDisconnect operations and remove listener
                     //this is because otherwise the onDisconnect operations will be executed and the room recreated with setValue
                     roomRef.onDisconnect().cancel()
                     roomRef.removeEventListener(this)
@@ -221,24 +220,30 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
                     return
                 }
                 val game = snapshot.getValue(Game::class.java) ?: return
-                // if game STARTED, cancel onDisconnect operations and remove listener
-                if (game.state == GameState.STARTED || game.state == GameState.HUNTING) {
-                    roomRef.onDisconnect().cancel()
-                    roomRef.child("state").onDisconnect().setValue(GameState.ENDED)
-                    roomRef.removeEventListener(this)
-                    presenceListener = null
-                    return
-                }
-                // if game OPEN or JOINED
-                if (game.state == GameState.OPEN || game.state == GameState.JOINED){
-                    when (userId) {
-                        game.creator?.uid -> {
-                            roomRef.onDisconnect().removeValue()
+
+                when (game.state) {
+                    GameState.OPEN, GameState.JOINED -> {
+                        when (userId) {
+                            game.creator?.uid -> {
+                                roomRef.onDisconnect().removeValue()
+                            }
+                            game.joiner?.uid -> {
+                                roomRef.child("joiner").onDisconnect().removeValue()
+                                roomRef.child("state").onDisconnect().setValue(GameState.OPEN)
+                            }
                         }
-                        game.joiner?.uid -> {
-                            roomRef.child("joiner").onDisconnect().removeValue()
-                            roomRef.child("state").onDisconnect().setValue(GameState.OPEN)
-                        }
+                    }
+                    // if game STARTED, cancel onDisconnect operations and remove listener
+                    GameState.STARTED, GameState.HUNTING -> {
+                        roomRef.onDisconnect().cancel() // Cancella altri onDisconnect precedenti
+                        roomRef.child("state").onDisconnect().setValue(GameState.ENDED)
+                        roomRef.removeEventListener(this)
+                        presenceListener = null
+                    }
+                    GameState.ENDED -> {
+                        roomRef.onDisconnect().cancel()
+                        roomRef.removeEventListener(this)
+                        presenceListener = null
                     }
                 }
             }
@@ -249,7 +254,6 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
 
         roomRef.addValueEventListener(presenceListener!!)
     }
-
 
     override suspend fun endGame() {
         val ref = database.child("rooms").child(_roomCode.value)
@@ -266,14 +270,31 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
         }
     }
 
+    private fun cleanupPresence() {
+        val roomCode = _roomCode.value
+        if (roomCode.isEmpty()) return
+        val roomRef = database.child("rooms").child(roomCode)
+        presenceListener?.let {
+            roomRef.removeEventListener(it)
+            presenceListener = null
+        }
+        // Cancella eventuali operazioni onDisconnect
+        roomRef.onDisconnect().cancel()
+    }
+
+    override fun onExitGame() {
+        cleanupPresence()
+        _roomCode.value = ""
+    }
+
 
     //AR GAME
 
     override suspend fun hostCloudAnchor(arSession: Session, anchor: Anchor): String =
         suspendCancellableCoroutine { cont ->
         var resumed = false
-        // Avvia l'hosting del cloud anchor, con timeout (30 seconds)
-        arSession.hostCloudAnchorAsync(anchor, 30) { cloudAnchorId, cloudState ->
+        // Avvia l'hosting del cloud anchor, con time to live (1 day)
+        arSession.hostCloudAnchorAsync(anchor, 1) { cloudAnchorId, cloudState ->
             if (!resumed) {
                 if (cloudState == Anchor.CloudAnchorState.SUCCESS) {
                     resumed = true
@@ -311,7 +332,6 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
                             suspendCancellableCoroutine<Anchor> { cont ->
                                 var resumed = false
                                 arSession.resolveCloudAnchorAsync(anchorData.cloudAnchorId) { anchor, cloudState ->
-                                    Log.d("GamingService", "Callback per ${anchorData.cloudAnchorId}: $cloudState")
                                     if (!resumed) {
                                         when {
                                             cloudState == Anchor.CloudAnchorState.SUCCESS -> {
@@ -322,7 +342,6 @@ class GamingServiceImpl(private val auth: AccountService) : GamingService {
                                                 resumed = true
                                                 cont.resumeWithException(Exception("Resolution failed: $cloudState"))
                                             }
-                                            // Stato intermedio: ...
                                         }
                                     }
                                 }

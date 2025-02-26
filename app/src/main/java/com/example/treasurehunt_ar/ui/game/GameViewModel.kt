@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 
 class GameViewModel(
@@ -29,7 +30,7 @@ class GameViewModel(
 ) : AppViewModel() {
 
     data class GameUiState(
-        val localAnchors: List<AnchorData> = emptyList(),
+        val localCloudAnchors: List<AnchorData> = emptyList(),
         val resolvedOpponentAnchors: List<Pair<Anchor, AnchorData>> = emptyList(), //(cloudAnchorId, AnchorData)
         val unresolvedAnchors: List<AnchorData> = emptyList(),
         val isHosting: Boolean = false,
@@ -43,6 +44,8 @@ class GameViewModel(
     // Stato del gioco aggiornato in tempo reale (dal db)
     private val _game = MutableStateFlow<Game>(Game())
     val game: StateFlow<Game> = _game.asStateFlow()
+
+    private val hostingCounter = AtomicInteger(0)
 
     var arSession: Session? = null
         private set
@@ -84,8 +87,7 @@ class GameViewModel(
     }
 
     private fun bothAnchorsConfirmed(): Boolean {
-        val g = _game.value
-        return g.confirmedAnchorsCreator && g.confirmedAnchorsJoiner
+        return _game.value.confirmedAnchorsCreator && _game.value.confirmedAnchorsJoiner
     }
 
     // Start hunting phase
@@ -98,7 +100,7 @@ class GameViewModel(
                 onAnchorResolved = { resolvedAnchor, anchorData ->
                     val newPair = resolvedAnchor to anchorData
                     _uiState.value = _uiState.value.copy(resolvedOpponentAnchors = _uiState.value.resolvedOpponentAnchors + newPair)
-                    if (_uiState.value.resolvedOpponentAnchors.size == REQUIRED_ANCHORS_COUNT)
+                    if (_uiState.value.resolvedOpponentAnchors.size == _game.value.numberOfAnchors)
                         onAllOpponentAnchorsResolved()
                 },
                 onTimeout = { unresolved ->
@@ -157,6 +159,7 @@ class GameViewModel(
         onFailure: (Throwable) -> Unit
     ) {
         launchCatching {
+            hostingCounter.incrementAndGet()
             _uiState.value = _uiState.value.copy(isHosting = true)
             try {
                 val cloudAnchorId = serviceModule.gamingService.hostCloudAnchor(arSession!!, anchor)
@@ -167,14 +170,14 @@ class GameViewModel(
                     rotation = anchor.pose.rotationQuaternion.toList()
                 )
                 _uiState.value = _uiState.value.copy(
-                    localAnchors = _uiState.value.localAnchors + anchorData
+                    localCloudAnchors = _uiState.value.localCloudAnchors + anchorData
                 )
                 addAnchorInGame(anchorData)
                 onSuccess(anchor)
                 viewModelScope.launch {
                     SnackbarManager.sendEvent(
                         event = SnackbarEvent(
-                            message = UiText.DynamicString("Object ${_uiState.value.localAnchors.size} hosted successfully")
+                            message = UiText.DynamicString("Object ${_uiState.value.localCloudAnchors.size} hosted successfully")
                         )
                     )
                 }
@@ -182,7 +185,9 @@ class GameViewModel(
                 onFailure(e)
                 throw e
             } finally {
-                _uiState.value = _uiState.value.copy(isHosting = false)
+                if (hostingCounter.decrementAndGet() == 0) {
+                    _uiState.value = _uiState.value.copy(isHosting = false)
+                }
             }
         }
     }
@@ -193,23 +198,19 @@ class GameViewModel(
     }
 
     // Elimina gli anchor locali e aggiorna il record su Firebase
-    private fun clearAnchors() {
-        _uiState.value = _uiState.value.copy(localAnchors = emptyList())
-
-        if (::childNodes.isInitialized) {
-            childNodes.clear()
-        }
-        // childNodes.value.clear()
+    private fun clearAndDetachAnchors() {
+        _uiState.value = _uiState.value.copy(localCloudAnchors = emptyList())
+        childNodes.forEach { it.destroy() } // destroy in Sceneview = detach from arCore
+        childNodes.clear()
     }
 
     // Aggiorna il flag di conferma nel record Game. Se entrambi hanno confermato, la hunting phase parte (da observeGame).
     fun confirmAnchors() {
         launchCatching {
             // if (_localAnchors.size == REQUIRED_ANCHORS_COUNT) {
-            if (_uiState.value.localAnchors.size == REQUIRED_ANCHORS_COUNT) {
+            if (_uiState.value.localCloudAnchors.size == _game.value.numberOfAnchors) {
                 serviceModule.gamingService.updateConfirmedAnchorField(userIsCreator(), true)
-                // clearAnchors(childNodes)
-                clearAnchors()
+                clearAndDetachAnchors()
             }
         }
     }
@@ -222,10 +223,20 @@ class GameViewModel(
             if (allFound) {
                 val success = serviceModule.gamingService.claimWin()
                 if (success) {
-                    serviceModule.gamingService.updateGameField("state", GameState.ENDED)
+                    serviceModule.gamingService.endGame()
                 }
             }
             onComplete()
+        }
+    }
+
+    fun onMappingQualityInsufficient() {
+        launchCatching {
+            SnackbarManager.sendEvent(
+                event = SnackbarEvent(
+                    message = UiText.DynamicString("Mapping quality insufficient. Please move to a different location.")
+                )
+            )
         }
     }
 
@@ -240,16 +251,20 @@ class GameViewModel(
     fun endGameAndExit(popUpScreen: () -> Unit) {
         launchCatching {
             serviceModule.gamingService.endGame()
+            childNodes.forEach { it.destroy()}
+            arSession?.close()
+            serviceModule.gamingService.onExitGame()
             popUpScreen()
         }
     }
 
     fun exitGame(popUpScreen: () -> Unit) {
+        childNodes.forEach { it.destroy() }
+        arSession?.close()
+        serviceModule.gamingService.onExitGame()
         popUpScreen()
     }
 
-    companion object {
-        const val REQUIRED_ANCHORS_COUNT = 1
-    }
+
 
 }

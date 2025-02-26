@@ -31,6 +31,7 @@
         tools:targetApi="33">
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:theme="@style/Theme.TreasureHunt_AR">
@@ -49,14 +50,8 @@
             android:configChanges="orientation|screenSize">
         </activity>
 
-        <activity
-            android:name="com.example.treasurehunt_ar.mytemplate.OldTemplate"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.TreasureHunt_AR">
-        </activity>
-
-<!--        <meta-data android:name="com.google.ar.core" android:value="required" />-->
+        <!-- Needed to install Play Services for Ar alongside the app (replace Sceneview value)-->
+        <meta-data android:name="com.google.ar.core" android:value="required" tools:replace="android:value"/>
 
     </application>
 

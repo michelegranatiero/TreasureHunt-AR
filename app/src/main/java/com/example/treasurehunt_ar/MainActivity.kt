@@ -29,12 +29,11 @@ import com.example.treasurehunt_ar.ui.game.MatchmakingScreen
 import com.example.treasurehunt_ar.ui.splash.SplashScreen
 import com.example.treasurehunt_ar.ui.theme.TreasureHunt_ARTheme
 import com.example.treasurehunt_ar.ui.utils.SnackbarFlowHelper
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.database.database
+import com.example.treasurehunt_ar.ui.utils.checkGooglePlayServicesForAR
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -91,11 +90,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun configureFirebaseServices() {
-        Firebase.auth.useEmulator(LOCALHOST, AUTH_PORT)
-        Firebase.database.useEmulator(LOCALHOST, DATABASE_PORT)
+    override fun onResume() {
+        super.onResume()
+        checkGooglePlayServicesForAR(activity = this)
     }
 }
+
 
 
 

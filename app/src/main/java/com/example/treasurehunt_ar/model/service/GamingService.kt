@@ -16,7 +16,7 @@ interface GamingService {
     suspend fun leaveRoom()
     suspend fun startGame()
     suspend fun endGame()
-    fun setupPresence()
+    fun onExitGame()
 
     // AR part:
     suspend fun hostCloudAnchor(arSession: Session, anchor: Anchor): String
