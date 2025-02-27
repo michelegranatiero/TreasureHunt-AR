@@ -282,7 +282,8 @@ fun GameScreen(
             val qualityText = when(mappingQuality) {
                 Session.FeatureMapQuality.GOOD -> "Good Quality"
                 Session.FeatureMapQuality.SUFFICIENT -> "Sufficient Quality"
-                else -> "Insufficient Quality... try moving around!"
+                else -> "Insufficient Quality...\n" +
+                        "Try moving around!"
             }
             val qualityColor = when(mappingQuality) {
                 Session.FeatureMapQuality.GOOD -> Color.Green.copy(alpha = 0.6f)
@@ -303,7 +304,8 @@ fun GameScreen(
                         text = qualityText,
                         fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
                         color = Color.White,
-                        modifier = Modifier.padding(16.dp, 8.dp)
+                        modifier = Modifier.padding(16.dp, 8.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -660,11 +662,12 @@ fun MappingQualityPreview() {
             colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.6f))
         ) {
             Text(
-                text = "Insufficient Quality... try moving around!",
+                text = "Insufficient Quality...\nTry moving around!",
                 fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
-                // fontSize = 24.sp,
+                fontSize = 16.sp,
                 color = Color.White,
-                modifier = Modifier.padding(16.dp, 8.dp)
+                modifier = Modifier.padding(16.dp, 8.dp),
+                textAlign = TextAlign.Center
             )
         }
     }
