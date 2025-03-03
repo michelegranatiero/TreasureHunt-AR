@@ -39,10 +39,10 @@ class MatchmakingViewModel(
 
     private var gameObservationJob: Job? = null
 
-    private lateinit var navigateAndPopUp: (Route, Route) -> Unit
+    private lateinit var navigateAndPopUp: (Route, Any) -> Unit
 
     private var isInitialized = false
-    fun initialize(restartApp: (Route) -> Unit, openAndPopUp: (Route, Route) -> Unit) {
+    fun initialize(restartApp: (Route) -> Unit, openAndPopUp: (Route, Any) -> Unit) {
         navigateAndPopUp = openAndPopUp //on every recomposition, otherwise app crashes
 
         if (isInitialized) return
@@ -137,7 +137,7 @@ class MatchmakingViewModel(
     }
 
     private fun navigateToGameScreen() {
-        navigateAndPopUp(Route.GameGraph.Game, Route.GameGraph.Matchmaking(mode))
+        navigateAndPopUp(Route.GameGraph.Game, Route.GameGraph.Matchmaking::class)
     }
 
     private fun handleRoomCancelled() {

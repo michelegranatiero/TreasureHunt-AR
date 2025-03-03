@@ -20,22 +20,15 @@ class AppNavState(
     }
 
     fun popUp() {
-        // navController.navigateUp()
-        //popUpScreen() has a bug when pressing multiple times
-        /* if (!navController.popBackStack()) {
-            navController.navigate(Route.GameGraph.Home)
-        } */
-        navController.popBackStack(
-            Route.GameGraph.Home,
-            false
-        )
+        navController.navigateUp()
+        // navController.popBackStack() // has a bug when pressing multiple times
     }
 
     fun navigate(route: Route) {
         navController.navigate(route) { launchSingleTop = true }
     }
 
-    fun navigateAndPopUp(route: Route, popUp: Route) {
+    fun navigateAndPopUp(route: Route, popUp: Any) {
         navController.navigate(route) {
             launchSingleTop = true
             popUpTo(popUp) { inclusive = true }

@@ -14,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.treasurehunt_ar.Route
 import com.example.treasurehunt_ar.TreasureHuntApplication
 import com.example.treasurehunt_ar.ui.utils.customViewModelFactory
 import kotlinx.coroutines.delay
@@ -23,7 +22,7 @@ private const val SPLASH_TIMEOUT = 1000L
 
 @Composable
 fun SplashScreen(
-    openAndPopUp: (Route, Route) -> Unit,
+    navigateToMain: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SplashViewModel = viewModel<SplashViewModel>(
         factory = customViewModelFactory {
@@ -32,8 +31,7 @@ fun SplashScreen(
     )
 ) {
     Column(
-        modifier =
-        modifier
+        modifier =modifier
             .fillMaxWidth()
             .fillMaxHeight()
             .background(color = MaterialTheme.colorScheme.background)
@@ -46,6 +44,6 @@ fun SplashScreen(
 
     LaunchedEffect(true) {
         delay(SPLASH_TIMEOUT)
-        viewModel.onAppStart(openAndPopUp)
+        viewModel.onAppStart(navigateToMain)
     }
 }

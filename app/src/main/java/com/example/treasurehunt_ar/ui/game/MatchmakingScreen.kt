@@ -50,7 +50,7 @@ import com.example.treasurehunt_ar.ui.utils.customViewModelFactory
 @Composable
 fun MatchmakingScreen(
     restartApp: (Route) -> Unit,
-    openAndPopUp: (Route, Route) -> Unit,
+    openAndPopUp: (Route, Any) -> Unit,
     popUpScreen: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MatchmakingViewModel = viewModel<MatchmakingViewModel>(

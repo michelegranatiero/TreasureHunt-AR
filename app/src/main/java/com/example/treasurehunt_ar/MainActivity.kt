@@ -13,7 +13,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -51,6 +54,9 @@ class MainActivity : ComponentActivity() {
                     val snackbarHostState = remember { SnackbarHostState() }
                     val appNavState = rememberAppState(/* snackbarHostState */)
                     SnackbarFlowHelper(snackbarHostState)
+
+                    var initialRoute by remember { mutableStateOf<Route?>(null) }
+
                     Scaffold (
                         snackbarHost = { SnackbarHost(
                             hostState = snackbarHostState,
@@ -62,30 +68,29 @@ class MainActivity : ComponentActivity() {
                         ) },
 
                     ){ /* innerPaddingModifier -> */
-                        NavHost(
-                            navController = appNavState.navController,
-                            startDestination = Route.Splash,
-                            // modifier = Modifier.padding(innerPaddingModifier)
-                        ) {
-                            composable<Route.Splash> {
-                                SplashScreen(
-                                    openAndPopUp = { route, popUp -> appNavState.navigateAndPopUp(route, popUp) }
-                                )
+
+                        if (initialRoute == null) {
+                            SplashScreen(
+                                navigateToMain = {initialRoute = Route.GameGraph}
+                            )
+                        } else{
+                            NavHost(
+                                navController = appNavState.navController,
+                                startDestination = initialRoute!!,
+                                // modifier = Modifier.padding(innerPaddingModifier)
+                            ) {
+                                composable<Route.AccountCenter> {
+                                    AccountCenterScreen(
+                                        restartApp = { route -> appNavState.clearAndNavigate(route) },
+                                        openScreen = { route -> appNavState.navigate(route) }
+                                    )
+                                }
+                                authenticationGraph(appNavState)
+                                gameGraph(appNavState)
                             }
-                            composable<Route.AccountCenter> {
-                                AccountCenterScreen(
-                                    restartApp = { route -> appNavState.clearAndNavigate(route) },
-                                    openScreen = { route -> appNavState.navigate(route) }
-                                )
-                            }
-                            authenticationGraph(appNavState)
-                            gameGraph(appNavState)
                         }
                     }
-
                 }
-
-
             }
         }
     }
